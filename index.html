@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Price & CBM Estimator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        .table-cell-input, .input-field, .select-field {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #e2e8f0; /* Tailwind gray-300 */
+            border-radius: 0.375rem; /* rounded-md */
+            box-sizing: border-box;
+            background-color: white;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+        }
+        .table-cell-input:focus, .input-field:focus, .select-field:focus {
+            outline: 2px solid #3b82f6; /* focus:ring-indigo-500 */
+            border-color: #3b82f6; /* focus:border-indigo-500 */
+        }
+        .table-cell-input {
+             min-width: 60px;
+        }
+        .table-cell-link-input {
+            min-width: 150px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+        .modal-buttons button {
+            margin: 0 10px;
+        }
+        .calculated-field {
+            background-color: #f3f4f6;
+            color: #374151;
+        }
+        #authStatus {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: #10B981;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            display: none;
+            z-index: 1001;
+        }
+        #userIdDisplay {
+            position: fixed;
+            top: 45px;
+            right: 10px;
+            background-color: #60A5FA;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            display: none;
+            word-break: break-all;
+            max-width: 150px;
+            z-index: 1001;
+        }
+        .summary-block div {
+            margin-bottom: 0.5rem;
+        }
+        /* Hide/show classes */
+        .hidden-field {
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center p-4">
+
+    <div id="authStatus"></div>
+    <div id="userIdDisplay"></div>
+
+    <div class="container mx-auto bg-white shadow-xl rounded-lg p-4 md:p-6 w-full max-w-screen-xl">
+        <h1 class="text-2xl md:text-3xl font-bold text-center text-gray-700 mb-6">Advanced Price & CBM Estimator</h1>
+
+        <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-700 mb-3">Customer Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="customerName" class="block text-sm font-medium text-gray-700">Customer Name</label>
+                    <input type="text" id="customerName" placeholder="Enter customer name" class="mt-1 input-field">
+                </div>
+                <div>
+                    <label for="customerPhone" class="block text-sm font-medium text-gray-700">Customer Phone</label>
+                    <input type="tel" id="customerPhone" placeholder="Enter phone number" class="mt-1 input-field">
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 items-end">
+            <div>
+                <label for="kursInput" class="block text-sm font-medium text-gray-700">Kurs (e.g., Yuan to Rp)</label>
+                <input type="number" id="kursInput" value="2335" min="0" step="0.01" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            </div>
+             <div class="md:col-span-2 flex justify-end items-center space-x-2">
+                <button id="saveToDbBtn" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md shadow h-10">
+                    Save Data
+                </button>
+                 <button id="loadFromDbBtn" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-md shadow h-10">
+                    Load Data
+                </button>
+            </div>
+        </div>
+        <hr class="my-4">
+
+        <div class="border border-gray-200 rounded-lg p-4 mb-6">
+            <h3 class="text-md font-semibold text-gray-700 mb-3">Add New Item</h3>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Shipping Type</label>
+                <div class="flex items-center space-x-4">
+                    <label class="flex items-center">
+                        <input type="radio" name="shippingType" value="sea" id="shippingTypeSea" class="form-radio h-4 w-4 text-indigo-600" checked>
+                        <span class="ml-2 text-sm text-gray-700">Sea Freight</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="shippingType" value="air" id="shippingTypeAir" class="form-radio h-4 w-4 text-indigo-600">
+                        <span class="ml-2 text-sm text-gray-700">Air Freight</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 items-end">
+                <div>
+                    <label for="itemName" class="block text-sm font-medium text-gray-700">Item Name</label>
+                    <input type="text" id="itemName" placeholder="Product A" class="mt-1 input-field">
+                </div>
+                <div>
+                    <label for="itemProductLink" class="block text-sm font-medium text-gray-700">Product Link</label>
+                    <input type="url" id="itemProductLink" placeholder="https://example.com" class="mt-1 input-field">
+                </div>
+                <div>
+                    <label for="itemQuantity" class="block text-sm font-medium text-gray-700">Qty</label>
+                    <input type="number" id="itemQuantity" placeholder="1" min="0" class="mt-1 input-field">
+                </div>
+                <div>
+                    <label for="itemPriceYuan" class="block text-sm font-medium text-gray-700">Price (Yuan)</label>
+                    <input type="number" id="itemPriceYuan" placeholder="100" min="0" step="0.01" class="mt-1 input-field">
+                </div>
+
+                <div id="seaFreightFieldsContainer" class="contents">
+                    <div>
+                        <label for="itemLength" class="block text-sm font-medium text-gray-700">L (cm)</label>
+                        <input type="number" id="itemLength" placeholder="10" min="0" step="0.01" class="mt-1 input-field">
+                    </div>
+                    <div>
+                        <label for="itemWidth" class="block text-sm font-medium text-gray-700">W (cm)</label>
+                        <input type="number" id="itemWidth" placeholder="10" min="0" step="0.01" class="mt-1 input-field">
+                    </div>
+                    <div>
+                        <label for="itemHeight" class="block text-sm font-medium text-gray-700">H (cm)</label>
+                        <input type="number" id="itemHeight" placeholder="10" min="0" step="0.01" class="mt-1 input-field">
+                    </div>
+                    <div>
+                        <label for="itemCbmUnitPriceRp" class="block text-sm font-medium text-gray-700">Sea - CBM Category</label>
+                        <select id="itemCbmUnitPriceRp" class="mt-1 select-field">
+                            <option value="4000000">(WHC/RTS) UMUM - Rp 4,000,000</option>
+                            <option value="5250000">(WHC) Larangan terbatas - Rp 5,250,000</option>
+                            <option value="4500000">(WHC) Lartas ringan - Rp 4,500,000</option>
+                            <option value="5000000">(WHC) Mesin - Rp 5,000,000</option>
+                            <option value="9000000">(WHC) Garment - Rp 9,000,000</option>
+                            <option value="4000000">(RTS) Sepatu - Rp 4,000,000</option>
+                            <option value="4000000">(RTS) BAG - Rp 4,000,000</option>
+                            <option value="6500000">(WHC) COSMETIC/FOOD - Rp 6,500,000</option>
+                            <option value="4000000">(RTS) ACC HP - Rp 4,000,000</option>
+                            <option value="0">Custom Price (edit in table)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="airFreightFieldsContainer" class="hidden-field contents">
+                     <div>
+                        <label for="itemWeightKg" class="block text-sm font-medium text-gray-700">Weight (KG)</label>
+                        <input type="number" id="itemWeightKg" placeholder="0.5" min="0" step="0.01" class="mt-1 input-field">
+                    </div>
+                </div>
+                <button id="addItemBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow h-10 self-end col-span-full sm:col-span-1">
+                    Add Item
+                </button>
+            </div>
+        </div>
+
+
+        <div class="overflow-x-auto rounded-lg shadow">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="min-width: 120px;">Item Name</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="min-width: 120px;">Product Link</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ship. Type</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price (Yuan)</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">L(cm)</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">W(cm)</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">H(cm)</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CBM</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit CBM Price (Rp)</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Weight (KG)</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit KG Price (Rp)</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Ship. Cost (Rp)</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Item Cost (Rp)</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Item Cost (Rp)</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Overall Row Total (Rp)</th>
+                        <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="spreadsheetBody" class="bg-white divide-y divide-gray-200">
+                    <tr id="emptyRow">
+                        <td colspan="17" class="px-4 py-10 text-center text-gray-500">No items added yet. Add items or load data.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-6 flex flex-col md:flex-row justify-between items-center">
+            <div class="text-xl font-semibold text-gray-700 mb-4 md:mb-0 summary-block">
+                <div>Grand Total: <span id="grandTotal" class="text-blue-600">Rp 0.00</span></div>
+                <div class="text-lg text-gray-600">Avg. Price / Piece: <span id="averagePrice" class="text-green-600">Rp 0.00</span></div>
+            </div>
+            <button id="clearAllBtn" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md shadow">
+                Clear All Items
+            </button>
+        </div>
+    </div>
+
+    <div id="confirmationModal" class="modal"><div class="modal-content"><p id="modalMessage" class="text-lg mb-4">Are you sure?</p><div class="modal-buttons"><button id="confirmActionBtn" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Confirm</button><button id="cancelActionBtn" class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">Cancel</button></div></div></div>
+    <div id="infoModal" class="modal"><div class="modal-content"><p id="infoMessage" class="text-lg mb-4">Info message.</p><div class="modal-buttons"><button id="okInfoBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">OK</button></div></div></div>
+
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-spreadsheet-app';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db, auth, userId;
+        let items = [];
+        let nextId = 0;
+        let currentKurs = 2335;
+        const AIR_FREIGHT_KG_PRICE = 170000;
+
+        // DOM Elements
+        const customerNameInput = document.getElementById('customerName');
+        const customerPhoneInput = document.getElementById('customerPhone');
+        const kursInput = document.getElementById('kursInput');
+
+        const shippingTypeSeaRadio = document.getElementById('shippingTypeSea');
+        const shippingTypeAirRadio = document.getElementById('shippingTypeAir');
+        const seaFreightFieldsContainer = document.getElementById('seaFreightFieldsContainer');
+        const airFreightFieldsContainer = document.getElementById('airFreightFieldsContainer');
+
+        const itemNameInput = document.getElementById('itemName');
+        const itemProductLinkInput = document.getElementById('itemProductLink');
+        const itemQuantityInput = document.getElementById('itemQuantity');
+        const itemPriceYuanInput = document.getElementById('itemPriceYuan');
+        // Sea
+        const itemLengthInput = document.getElementById('itemLength');
+        const itemWidthInput = document.getElementById('itemWidth');
+        const itemHeightInput = document.getElementById('itemHeight');
+        const itemCbmUnitPriceRpSelect = document.getElementById('itemCbmUnitPriceRp');
+        // Air
+        const itemWeightKgInput = document.getElementById('itemWeightKg');
+
+        const addItemBtn = document.getElementById('addItemBtn');
+        const spreadsheetBody = document.getElementById('spreadsheetBody');
+        const grandTotalDisplay = document.getElementById('grandTotal');
+        const averagePriceDisplay = document.getElementById('averagePrice');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const emptyRow = document.getElementById('emptyRow');
+
+        const saveToDbBtn = document.getElementById('saveToDbBtn');
+        const loadFromDbBtn = document.getElementById('loadFromDbBtn');
+        const authStatusDiv = document.getElementById('authStatus');
+        const userIdDisplayDiv = document.getElementById('userIdDisplay');
+
+        const confirmationModal = document.getElementById('confirmationModal');
+        const confirmActionBtn = document.getElementById('confirmActionBtn');
+        const cancelActionBtn = document.getElementById('cancelActionBtn');
+        const modalMessage = document.getElementById('modalMessage');
+        const infoModal = document.getElementById('infoModal');
+        const infoMessage = document.getElementById('infoMessage');
+        const okInfoBtn = document.getElementById('okInfoBtn');
+
+        // --- Shipping Type Toggle ---
+        function toggleShippingFields() {
+            if (shippingTypeSeaRadio.checked) {
+                seaFreightFieldsContainer.classList.remove('hidden-field');
+                airFreightFieldsContainer.classList.add('hidden-field');
+            } else { // Air checked
+                seaFreightFieldsContainer.classList.add('hidden-field');
+                airFreightFieldsContainer.classList.remove('hidden-field');
+            }
+        }
+        shippingTypeSeaRadio.addEventListener('change', toggleShippingFields);
+        shippingTypeAirRadio.addEventListener('change', toggleShippingFields);
+
+
+        async function initializeFirebase() {
+             if (!firebaseConfig) {
+                console.error("Firebase config is not available.");
+                showInfoModal("Error: Firebase configuration is missing. Data persistence will not work.");
+                authStatusDiv.textContent = "DB Error";
+                authStatusDiv.style.backgroundColor = "red";
+                authStatusDiv.style.display = "block";
+                await loadDataFromLocalStorage(); 
+                return;
+            }
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        console.log("Authenticated User ID:", userId);
+                        authStatusDiv.textContent = "DB Connected";
+                        authStatusDiv.style.backgroundColor = "#10B981";
+                        authStatusDiv.style.display = "block";
+                        userIdDisplayDiv.textContent = `User: ${userId}`;
+                        userIdDisplayDiv.style.display = "block";
+                        await loadDataFromFirestore();
+                    } else {
+                        console.log("User is signed out or auth token invalid.");
+                        authStatusDiv.textContent = "DB Disconnected";
+                        authStatusDiv.style.backgroundColor = "orange";
+                        authStatusDiv.style.display = "block";
+                        userIdDisplayDiv.style.display = "none";
+                         await loadDataFromLocalStorage(); 
+                    }
+                });
+
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Firebase initialization error:", error);
+                showInfoModal(`Firebase Error: ${error.message}. Data features disabled.`);
+                authStatusDiv.textContent = "DB Init Error";
+                authStatusDiv.style.backgroundColor = "red";
+                authStatusDiv.style.display = "block";
+                await loadDataFromLocalStorage(); 
+            }
+        }
+
+        function formatCurrency(amount, currency = 'Rp') {
+            return currency + ' ' + parseFloat(amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+        }
+
+        function showInfoModal(message) {
+            infoMessage.textContent = message;
+            infoModal.style.display = 'flex';
+        }
+        okInfoBtn.onclick = () => infoModal.style.display = 'none';
+
+        function createCell(content, isEditable = false, item = null, field = '', type = 'text', step = 'any') {
+            const cell = document.createElement('td');
+            cell.classList.add('px-2', 'py-2', 'whitespace-nowrap', 'text-sm', 'text-gray-800'); 
+            
+            let actualEditable = isEditable;
+            if (field === 'shippingType' || 
+                (item?.shippingType === 'air' && ['length', 'width', 'height', 'cbm', 'cbmUnitPriceRp'].includes(field)) ||
+                (item?.shippingType === 'sea' && ['weightKg', 'unitKgPrice'].includes(field)) ||
+                field === 'unitKgPrice' 
+            ) {
+                actualEditable = false;
+            }
+
+
+            if (actualEditable && item) {
+                const input = document.createElement('input');
+                input.type = type;
+                input.value = (field === 'cbmUnitPriceRp' && typeof content === 'number') ? content.toFixed(0) : content;
+                 if (field === 'productLink') {
+                    input.type = 'url';
+                    input.classList.add('table-cell-link-input');
+                }
+                if (type === 'number') {
+                    input.min = "0";
+                    input.step = step;
+                }
+                input.classList.add('table-cell-input');
+                input.onchange = (e) => updateItem(item.id, field, type === 'number' ? parseFloat(e.target.value) : e.target.value);
+                cell.appendChild(input);
+            } else {
+                 if (field === 'productLink' && content) {
+                    const link = document.createElement('a');
+                    link.href = content;
+                    link.textContent = content.length > 20 ? content.substring(0, 17) + '...' : content; 
+                    link.title = content; 
+                    link.target = "_blank"; 
+                    link.classList.add('text-blue-600', 'hover:text-blue-800', 'hover:underline');
+                    cell.appendChild(link);
+                } else {
+                    cell.textContent = content;
+                }
+                if (typeof content === 'number' && !isEditable && field !== 'productLink') {
+                     cell.classList.add('calculated-field');
+                }
+                if (!actualEditable && typeof content !== 'number' && !content && field !== 'productLink') { 
+                    cell.textContent = 'N/A';
+                    cell.classList.add('text-gray-400');
+                }
+            }
+            return cell;
+        }
+
+        function calculateItemDerivedValues(item) {
+            item.unitItemCostRp = (parseFloat(item.priceYuan) || 0) * currentKurs;
+            item.totalItemCostRp = item.unitItemCostRp * (parseFloat(item.quantity) || 0);
+            item.totalShippingCostRp = 0;
+
+            if (item.shippingType === 'sea') {
+                item.cbm = ((parseFloat(item.length) || 0) * (parseFloat(item.width) || 0) * (parseFloat(item.height) || 0)) / 1000000;
+                item.totalShippingCostRp = item.cbm * (parseFloat(item.cbmUnitPriceRp) || 0);
+                item.weightKg = item.weightKg || 0; 
+            } else if (item.shippingType === 'air') {
+                item.totalShippingCostRp = (parseFloat(item.weightKg) || 0) * AIR_FREIGHT_KG_PRICE;
+                item.length = item.length || 0;
+                item.width = item.width || 0;
+                item.height = item.height || 0;
+                item.cbm = 0;
+                item.cbmUnitPriceRp = 0;
+            }
+            item.overallTotalRowRp = item.totalItemCostRp + item.totalShippingCostRp;
+        }
+
+        function renderTable() {
+            spreadsheetBody.innerHTML = '';
+            currentKurs = parseFloat(kursInput.value) || 0;
+
+            if (items.length === 0) {
+                if(emptyRow) spreadsheetBody.appendChild(emptyRow);
+                if(emptyRow) emptyRow.style.display = 'table-row';
+            } else {
+                if(emptyRow) emptyRow.style.display = 'none';
+                items.forEach(item => {
+                    calculateItemDerivedValues(item);
+
+                    const row = document.createElement('tr');
+                    row.setAttribute('data-id', item.id);
+                    row.classList.add('hover:bg-gray-50');
+
+                    row.appendChild(createCell(item.name, true, item, 'name'));
+                    row.appendChild(createCell(item.productLink || '', true, item, 'productLink', 'url'));
+                    row.appendChild(createCell(item.shippingType === 'sea' ? 'Sea' : 'Air', false, item, 'shippingType'));
+                    row.appendChild(createCell(item.quantity, true, item, 'quantity', 'number'));
+                    row.appendChild(createCell(item.priceYuan.toFixed(2), true, item, 'priceYuan', 'number', '0.01'));
+
+                    row.appendChild(createCell(item.shippingType === 'sea' ? (item.length || 0).toFixed(2) : 'N/A', item.shippingType === 'sea', item, 'length', 'number', '0.01'));
+                    row.appendChild(createCell(item.shippingType === 'sea' ? (item.width || 0).toFixed(2) : 'N/A', item.shippingType === 'sea', item, 'width', 'number', '0.01'));
+                    row.appendChild(createCell(item.shippingType === 'sea' ? (item.height || 0).toFixed(2) : 'N/A', item.shippingType === 'sea', item, 'height', 'number', '0.01'));
+                    row.appendChild(createCell(item.shippingType === 'sea' ? (item.cbm || 0).toFixed(4) : 'N/A', false, item, 'cbm'));
+                    row.appendChild(createCell(item.shippingType === 'sea' ? (item.cbmUnitPriceRp || 0) : 'N/A', item.shippingType === 'sea', item, 'cbmUnitPriceRp', 'number', '1'));
+                    
+                    row.appendChild(createCell(item.shippingType === 'air' ? (item.weightKg || 0).toFixed(2) : 'N/A', item.shippingType === 'air', item, 'weightKg', 'number', '0.01'));
+                    row.appendChild(createCell(item.shippingType === 'air' ? formatCurrency(AIR_FREIGHT_KG_PRICE) : 'N/A', false, item, 'unitKgPrice'));
+                    
+                    row.appendChild(createCell(formatCurrency(item.totalShippingCostRp || 0), false, item, 'totalShippingCostRp'));
+                    row.appendChild(createCell(formatCurrency(item.unitItemCostRp || 0), false, item, 'unitItemCostRp'));
+                    row.appendChild(createCell(formatCurrency(item.totalItemCostRp || 0), false, item, 'totalItemCostRp'));
+                    row.appendChild(createCell(formatCurrency(item.overallTotalRowRp || 0), false, item, 'overallTotalRowRp'));
+
+                    const actionsCell = document.createElement('td');
+                    actionsCell.classList.add('px-2', 'py-2', 'text-center', 'whitespace-nowrap', 'text-sm');
+                    const removeBtn = document.createElement('button');
+                    removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500 hover:text-red-700" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>`;
+                    removeBtn.classList.add('p-1', 'rounded-full');
+                    removeBtn.title = "Remove item";
+                    removeBtn.onclick = () => removeItem(item.id);
+                    actionsCell.appendChild(removeBtn);
+                    row.appendChild(actionsCell);
+
+                    spreadsheetBody.appendChild(row);
+                });
+            }
+            updateSummaryTotals();
+        }
+
+        function updateSummaryTotals() {
+            const grandTotal = items.reduce((sum, item) => sum + (item.overallTotalRowRp || 0), 0);
+            const totalQuantity = items.reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+            const averagePrice = totalQuantity > 0 ? (grandTotal / totalQuantity) : 0;
+
+            grandTotalDisplay.textContent = formatCurrency(grandTotal);
+            averagePriceDisplay.textContent = formatCurrency(averagePrice);
+        }
+
+        function addItem() {
+            const shippingType = shippingTypeSeaRadio.checked ? 'sea' : 'air';
+            const name = itemNameInput.value.trim();
+            const productLink = itemProductLinkInput.value.trim();
+            const quantity = parseFloat(itemQuantityInput.value);
+            const priceYuan = parseFloat(itemPriceYuanInput.value);
+            currentKurs = parseFloat(kursInput.value);
+
+            if (!name) { showInfoModal('Item name cannot be empty.'); itemNameInput.focus(); return; }
+            if (isNaN(quantity) || quantity <= 0) { showInfoModal('Valid quantity (must be > 0) required.'); itemQuantityInput.focus(); return; } 
+            if (isNaN(priceYuan) || priceYuan < 0) { showInfoModal('Valid Yuan price required.'); itemPriceYuanInput.focus(); return; }
+            if (isNaN(currentKurs) || currentKurs <= 0) { showInfoModal('Valid Kurs required.'); kursInput.focus(); return; }
+
+            let newItemData = { 
+                id: db ? doc(collection(db, "dummy")).id : `local-${nextId++}`,
+                name, productLink, quantity, priceYuan, shippingType,
+                length: 0, width: 0, height: 0, cbm: 0, cbmUnitPriceRp: 0,
+                weightKg: 0,
+                totalShippingCostRp:0, unitItemCostRp:0, totalItemCostRp:0, overallTotalRowRp:0
+            };
+
+            if (shippingType === 'sea') {
+                const length = parseFloat(itemLengthInput.value);
+                const width = parseFloat(itemWidthInput.value);
+                const height = parseFloat(itemHeightInput.value);
+                const cbmUnitPriceRp = parseFloat(itemCbmUnitPriceRpSelect.value);
+
+                if (isNaN(length) || length <= 0) { showInfoModal('Valid length for Sea Freight required.'); itemLengthInput.focus(); return; }
+                if (isNaN(width) || width <= 0) { showInfoModal('Valid width for Sea Freight required.'); itemWidthInput.focus(); return; }
+                if (isNaN(height) || height <= 0) { showInfoModal('Valid height for Sea Freight required.'); itemHeightInput.focus(); return; }
+                if (isNaN(cbmUnitPriceRp) || cbmUnitPriceRp < 0) { showInfoModal('Valid CBM unit price selection for Sea Freight required.'); itemCbmUnitPriceRpSelect.focus(); return; }
+                
+                newItemData = {...newItemData, length, width, height, cbmUnitPriceRp};
+            } else { 
+                const weightKg = parseFloat(itemWeightKgInput.value);
+                if (isNaN(weightKg) || weightKg <= 0) { showInfoModal('Valid weight (must be > 0) for Air Freight required.'); itemWeightKgInput.focus(); return; }
+                newItemData = {...newItemData, weightKg};
+            }
+            
+            items.push(newItemData);
+            renderTable();
+            saveDataToLocalStorage();
+
+            [itemNameInput, itemProductLinkInput, itemQuantityInput, itemPriceYuanInput].forEach(input => input.value = '');
+            itemLengthInput.value = ''; itemWidthInput.value = ''; itemHeightInput.value = '';
+            itemCbmUnitPriceRpSelect.selectedIndex = 0;
+            itemWeightKgInput.value = '';
+            itemNameInput.focus();
+        }
+
+        function updateItem(id, field, value) {
+            const itemIndex = items.findIndex(item => item.id === id);
+            if (itemIndex > -1) {
+                if (field === 'name' && (!value || !value.toString().trim())) {
+                    showInfoModal('Item name cannot be empty.'); renderTable(); return;
+                }
+                if (field === 'quantity' && (isNaN(value) || parseFloat(value) <= 0)) { 
+                     showInfoModal(`Invalid quantity. Must be greater than 0.`); renderTable(); return;
+                }
+                if (['priceYuan', 'length', 'width', 'height', 'cbmUnitPriceRp', 'weightKg'].includes(field)) {
+                    if (isNaN(value) || parseFloat(value) < 0) {
+                         showInfoModal(`Invalid ${field}. Please enter a non-negative number.`); renderTable(); return;
+                    }
+                    if (items[itemIndex].shippingType === 'sea' && ['length', 'width', 'height'].includes(field) && parseFloat(value) <= 0) {
+                        showInfoModal(`Sea freight ${field} must be greater than 0.`); renderTable(); return;
+                    }
+                    if (items[itemIndex].shippingType === 'air' && field === 'weightKg' && parseFloat(value) <= 0) {
+                        showInfoModal(`Air freight weight must be greater than 0.`); renderTable(); return;
+                    }
+                    items[itemIndex][field] = parseFloat(value);
+                } else {
+                     items[itemIndex][field] = value; 
+                }
+                renderTable();
+                saveDataToLocalStorage();
+            }
+        }
+
+        function removeItem(id) {
+            modalMessage.textContent = "Are you sure you want to remove this item?";
+            confirmationModal.style.display = 'flex';
+
+            confirmActionBtn.onclick = () => {
+                items = items.filter(item => item.id !== id);
+                renderTable();
+                saveDataToLocalStorage(); 
+                confirmationModal.style.display = 'none';
+            }
+            cancelActionBtn.onclick = () => confirmationModal.style.display = 'none';
+        }
+
+        function clearAllItems() {
+            if (items.length === 0) {
+                showInfoModal("There are no items to clear.");
+                return;
+            }
+            modalMessage.textContent = "Are you sure you want to clear all items? Customer info and Kurs will remain.";
+            confirmationModal.style.display = 'flex';
+
+            confirmActionBtn.onclick = () => {
+                items = [];
+                nextId = 0;
+                renderTable();
+                saveDataToLocalStorage(); 
+                confirmationModal.style.display = 'none';
+            };
+            cancelActionBtn.onclick = () => confirmationModal.style.display = 'none';
+        }
+
+        function saveDataToLocalStorage() {
+            try {
+                const itemsToSave = items.map(item => ({
+                    ...item, 
+                    shippingType: item.shippingType || 'sea', 
+                    length: parseFloat(item.length) || 0,
+                    width: parseFloat(item.width) || 0,
+                    height: parseFloat(item.height) || 0,
+                    cbmUnitPriceRp: parseFloat(item.cbmUnitPriceRp) || 0,
+                    weightKg: parseFloat(item.weightKg) || 0,
+                }));
+
+                const dataToSave = {
+                    customerName: customerNameInput.value.trim(),
+                    customerPhone: customerPhoneInput.value.trim(),
+                    kurs: parseFloat(kursInput.value) || 2335,
+                    items: itemsToSave, 
+                };
+                localStorage.setItem(`spreadsheetData_${appId}`, JSON.stringify(dataToSave));
+                console.log("Data saved to Local Storage.");
+            } catch (error) {
+                console.error("Error saving data to Local Storage:", error);
+                showInfoModal("Could not save data locally. Your browser storage might be full or disabled.");
+            }
+        }
+
+        async function loadDataFromLocalStorage() {
+             try {
+                const localData = localStorage.getItem(`spreadsheetData_${appId}`);
+                if (localData) {
+                    const data = JSON.parse(localData);
+                    customerNameInput.value = data.customerName || "";
+                    customerPhoneInput.value = data.customerPhone || "";
+                    kursInput.value = data.kurs || 2335;
+                    currentKurs = parseFloat(kursInput.value);
+                    items = data.items || [];
+                    items.forEach((item, index) => { 
+                        if (!item.id) item.id = `local-${index}-${Date.now()}`;
+                        item.shippingType = item.shippingType || 'sea'; 
+                        item.productLink = item.productLink || "";
+                        item.quantity = parseFloat(item.quantity) || 0;
+                        item.priceYuan = parseFloat(item.priceYuan) || 0;
+                        item.length = parseFloat(item.length) || 0;
+                        item.width = parseFloat(item.width) || 0;
+                        item.height = parseFloat(item.height) || 0;
+                        item.cbmUnitPriceRp = parseFloat(item.cbmUnitPriceRp) || 0;
+                        item.weightKg = parseFloat(item.weightKg) || 0; 
+                    });
+                    renderTable();
+                    console.log("Data loaded from Local Storage.");
+                } else {
+                     console.log("No local data found.");
+                     renderTable(); 
+                }
+            } catch (error) {
+                console.error("Error loading data from Local Storage:", error);
+                showInfoModal("Could not load local data.");
+                renderTable();
+            }
+        }
+
+        async function saveDataToFirestore() {
+            if (!db || !userId) {
+                showInfoModal("Database not connected. Saving locally instead.");
+                saveDataToLocalStorage();
+                return;
+            }
+            try {
+                const itemsToSave = items.map(item => ({
+                    ...item,
+                    shippingType: item.shippingType || 'sea',
+                    productLink: item.productLink || "",
+                    quantity: parseFloat(item.quantity) || 0,
+                    priceYuan: parseFloat(item.priceYuan) || 0,
+                    length: parseFloat(item.length) || 0,
+                    width: parseFloat(item.width) || 0,
+                    height: parseFloat(item.height) || 0,
+                    cbmUnitPriceRp: parseFloat(item.cbmUnitPriceRp) || 0,
+                    weightKg: parseFloat(item.weightKg) || 0,
+                }));
+
+                const dataToSave = {
+                    customerName: customerNameInput.value.trim(),
+                    customerPhone: customerPhoneInput.value.trim(),
+                    kurs: parseFloat(kursInput.value) || 2335,
+                    items: itemsToSave,
+                    lastUpdated: new Date().toISOString()
+                };
+
+                const docRef = doc(db, "artifacts", appId, "users", userId, "spreadsheetData", "data");
+                await setDoc(docRef, dataToSave);
+                showInfoModal("Data saved successfully to the database!");
+                localStorage.removeItem(`spreadsheetData_${appId}`); 
+            } catch (error) {
+                console.error("Error saving data to Firestore:", error);
+                showInfoModal(`Error saving data to DB: ${error.message}. Saving locally.`);
+                saveDataToLocalStorage();
+            }
+        }
+
+        async function loadDataFromFirestore() {
+            if (!db || !userId) {
+                console.log("Cannot load from DB: Not connected. Trying local storage.");
+                await loadDataFromLocalStorage();
+                return;
+            }
+            try {
+                const docRef = doc(db, "artifacts", appId, "users", userId, "spreadsheetData", "data");
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    customerNameInput.value = data.customerName || "";
+                    customerPhoneInput.value = data.customerPhone || "";
+                    kursInput.value = data.kurs || 2335;
+                    currentKurs = parseFloat(kursInput.value);
+                    items = data.items || [];
+                    items.forEach((item, index) => {
+                        if (!item.id) item.id = `loaded-${index}-${Date.now()}`;
+                        item.shippingType = item.shippingType || 'sea';
+                        item.productLink = item.productLink || "";
+                        item.quantity = parseFloat(item.quantity) || 0;
+                        item.priceYuan = parseFloat(item.priceYuan) || 0;
+                        item.length = parseFloat(item.length) || 0;
+                        item.width = parseFloat(item.width) || 0;
+                        item.height = parseFloat(item.height) || 0;
+                        item.cbmUnitPriceRp = parseFloat(item.cbmUnitPriceRp) || 0;
+                        item.weightKg = parseFloat(item.weightKg) || 0;
+                    });
+                    renderTable();
+                    showInfoModal("Data loaded successfully from the database!");
+                } else {
+                    console.log("No data found in Firestore. Trying local storage.");
+                    await loadDataFromLocalStorage();
+                }
+            } catch (error) {
+                console.error("Error loading data from Firestore:", error);
+                showInfoModal(`Error loading DB data: ${error.message}. Trying local storage.`);
+                await loadDataFromLocalStorage();
+            }
+        }
+
+        // Event Listeners
+        addItemBtn.addEventListener('click', addItem);
+        clearAllBtn.addEventListener('click', clearAllItems);
+        kursInput.addEventListener('change', () => {
+            currentKurs = parseFloat(kursInput.value) || 0;
+             if (isNaN(currentKurs) || currentKurs <=0) {
+                showInfoModal("Kurs value is invalid.");
+                kursInput.value = 2335; 
+                currentKurs = 2335;
+            }
+            renderTable();
+            saveDataToLocalStorage();
+        });
+        customerNameInput.addEventListener('change', saveDataToLocalStorage);
+        customerPhoneInput.addEventListener('change', saveDataToLocalStorage);
+        saveToDbBtn.addEventListener('click', saveDataToFirestore);
+        loadFromDbBtn.addEventListener('click', loadDataFromFirestore);
+
+        const inputFieldsForEnter = [customerNameInput, customerPhoneInput, itemNameInput, itemProductLinkInput, itemQuantityInput, itemPriceYuanInput, itemLengthInput, itemWidthInput, itemHeightInput, itemWeightKgInput, itemCbmUnitPriceRpSelect];
+        inputFieldsForEnter.forEach((input, idx) => {
+            if (!input) { 
+                console.warn("An input field for Enter key handling was not found. Check IDs.");
+                return;
+            }
+            input.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault(); 
+                    const currentShippingType = shippingTypeSeaRadio.checked ? 'sea' : 'air';
+                    let isLastRelevantInput = false;
+
+                    if (currentShippingType === 'sea' && (input === itemHeightInput || input === itemCbmUnitPriceRpSelect)) {
+                        isLastRelevantInput = true;
+                    } else if (currentShippingType === 'air' && input === itemWeightKgInput) {
+                        isLastRelevantInput = true;
+                    } else if (input === itemPriceYuanInput && (currentShippingType === 'sea' && !itemLengthInput) ) { 
+                        isLastRelevantInput = true;
+                    }
+
+
+                    if (isLastRelevantInput) {
+                        addItem();
+                    } else {
+                        let nextInput = null;
+                        for (let i = idx + 1; i < inputFieldsForEnter.length; i++) {
+                            const potentialNextInput = inputFieldsForEnter[i];
+                            if (potentialNextInput && !potentialNextInput.closest('.hidden-field') && potentialNextInput.offsetParent !== null) { 
+                                nextInput = potentialNextInput;
+                                break;
+                            }
+                        }
+                        if (nextInput) {
+                            nextInput.focus();
+                        } else { 
+                           if(input === itemPriceYuanInput && currentShippingType === 'air' && itemWeightKgInput.offsetParent !== null && !itemWeightKgInput.closest('.hidden-field')){
+                               itemWeightKgInput.focus(); 
+                           } else {
+                               addItem(); 
+                           }
+                        }
+                    }
+                }
+            });
+        });
+
+        window.onclick = function(event) {
+            if (event.target == confirmationModal) confirmationModal.style.display = "none";
+            if (event.target == infoModal) infoModal.style.display = "none";
+        }
+
+        // Initial Setup
+        toggleShippingFields(); 
+        initializeFirebase();
+    </script>
+
+</body>
+</html>
