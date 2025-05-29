@@ -144,6 +144,9 @@
                 <input type="number" id="kursInput" value="2335" min="0" step="0.01" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
             </div>
              <div class="md:col-span-2 flex justify-end items-center space-x-2">
+                <button id="saveToSheetBtn" class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-md shadow h-10">
+                    Save to Sheet
+                </button>
                 <button id="saveToDbBtn" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md shadow h-10">
                     Save Data
                 </button>
@@ -204,15 +207,15 @@
                     <div>
                         <label for="itemCbmUnitPriceRp" class="block text-sm font-medium text-gray-700">Sea - CBM Category</label>
                         <select id="itemCbmUnitPriceRp" class="mt-1 select-field">
-                            <option value="4000000">(WHC/RTS) UMUM - Rp 4,000,000</option>
-                            <option value="5250000">(WHC) Larangan terbatas - Rp 5,250,000</option>
-                            <option value="4500000">(WHC) Lartas ringan - Rp 4,500,000</option>
-                            <option value="5000000">(WHC) Mesin - Rp 5,000,000</option>
-                            <option value="9000000">(WHC) Garment - Rp 9,000,000</option>
-                            <option value="4000000">(RTS) Sepatu - Rp 4,000,000</option>
-                            <option value="4000000">(RTS) BAG - Rp 4,000,000</option>
-                            <option value="6500000">(WHC) COSMETIC/FOOD - Rp 6,500,000</option>
-                            <option value="4000000">(RTS) ACC HP - Rp 4,000,000</option>
+                            <option value="4750000">UMUM - Rp 4,750,000</option>
+                            <option value="6000000">Larangan terbatas - Rp 6,000,000</option>
+                            <option value="5250000">Lartas ringan - Rp 5,250,000</option>
+                            <option value="5750000">Mesin - Rp 5,750,000</option>
+                            <option value="9750000">Garment - Rp 9,750,000</option>
+                            <option value="4750000">Sepatu - Rp 4,750,000</option>
+                            <option value="4750000">BAG - Rp 4,750,000</option>
+                            <option value="7250000">COSMETIC/FOOD - Rp 7,250,000</option>
+                            <option value="4750000">ACC HP - Rp 4,750,000</option>
                             <option value="0">Custom Price (edit in table)</option>
                         </select>
                     </div>
@@ -306,12 +309,10 @@
         const itemProductLinkInput = document.getElementById('itemProductLink');
         const itemQuantityInput = document.getElementById('itemQuantity');
         const itemPriceYuanInput = document.getElementById('itemPriceYuan');
-        // Sea
         const itemLengthInput = document.getElementById('itemLength');
         const itemWidthInput = document.getElementById('itemWidth');
         const itemHeightInput = document.getElementById('itemHeight');
         const itemCbmUnitPriceRpSelect = document.getElementById('itemCbmUnitPriceRp');
-        // Air
         const itemWeightKgInput = document.getElementById('itemWeightKg');
 
         const addItemBtn = document.getElementById('addItemBtn');
@@ -321,6 +322,7 @@
         const clearAllBtn = document.getElementById('clearAllBtn');
         const emptyRow = document.getElementById('emptyRow');
 
+        const saveToSheetBtn = document.getElementById('saveToSheetBtn');
         const saveToDbBtn = document.getElementById('saveToDbBtn');
         const loadFromDbBtn = document.getElementById('loadFromDbBtn');
         const authStatusDiv = document.getElementById('authStatus');
@@ -333,6 +335,9 @@
         const infoModal = document.getElementById('infoModal');
         const infoMessage = document.getElementById('infoMessage');
         const okInfoBtn = document.getElementById('okInfoBtn');
+
+        // Google Apps Script URL (Must be replaced by the user)
+        const SCRIPT_URL = "PASTE_YOUR_GOOGLE_APPS_SCRIPT_URL_HERE"; 
 
         // --- Shipping Type Toggle ---
         function toggleShippingFields() {
@@ -399,7 +404,12 @@
         }
 
         function formatCurrency(amount, currency = 'Rp') {
-            return currency + ' ' + parseFloat(amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+            // Check if amount is a valid number, if not, return default or error
+            const parsedAmount = parseFloat(amount);
+            if (isNaN(parsedAmount)) {
+                return currency + ' 0.00'; 
+            }
+            return currency + ' ' + parsedAmount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
         }
 
         function showInfoModal(message) {
@@ -452,10 +462,14 @@
                 if (typeof content === 'number' && !isEditable && field !== 'productLink') {
                      cell.classList.add('calculated-field');
                 }
-                if (!actualEditable && typeof content !== 'number' && !content && field !== 'productLink') { 
+                 // Updated N/A logic: Check for empty or 0 content in non-editable fields
+                if (!actualEditable && (content === 'N/A' || content === '' || content === 0 || content === 'Rp 0.00' ) && !['shippingType', 'productLink'].includes(field)) { 
                     cell.textContent = 'N/A';
                     cell.classList.add('text-gray-400');
                 }
+                 if (field === 'shippingType') { // Always display ship type text
+                     cell.textContent = content;
+                 }
             }
             return cell;
         }
@@ -468,12 +482,12 @@
             if (item.shippingType === 'sea') {
                 item.cbm = ((parseFloat(item.length) || 0) * (parseFloat(item.width) || 0) * (parseFloat(item.height) || 0)) / 1000000;
                 item.totalShippingCostRp = item.cbm * (parseFloat(item.cbmUnitPriceRp) || 0);
-                item.weightKg = item.weightKg || 0; 
+                item.weightKg = 0; 
             } else if (item.shippingType === 'air') {
                 item.totalShippingCostRp = (parseFloat(item.weightKg) || 0) * AIR_FREIGHT_KG_PRICE;
-                item.length = item.length || 0;
-                item.width = item.width || 0;
-                item.height = item.height || 0;
+                item.length = 0;
+                item.width = 0;
+                item.height = 0;
                 item.cbm = 0;
                 item.cbmUnitPriceRp = 0;
             }
@@ -506,7 +520,7 @@
                     row.appendChild(createCell(item.shippingType === 'sea' ? (item.width || 0).toFixed(2) : 'N/A', item.shippingType === 'sea', item, 'width', 'number', '0.01'));
                     row.appendChild(createCell(item.shippingType === 'sea' ? (item.height || 0).toFixed(2) : 'N/A', item.shippingType === 'sea', item, 'height', 'number', '0.01'));
                     row.appendChild(createCell(item.shippingType === 'sea' ? (item.cbm || 0).toFixed(4) : 'N/A', false, item, 'cbm'));
-                    row.appendChild(createCell(item.shippingType === 'sea' ? (item.cbmUnitPriceRp || 0) : 'N/A', item.shippingType === 'sea', item, 'cbmUnitPriceRp', 'number', '1'));
+                    row.appendChild(createCell(item.shippingType === 'sea' ? formatCurrency(item.cbmUnitPriceRp || 0) : 'N/A', item.shippingType === 'sea', item, 'cbmUnitPriceRp', 'number', '1'));
                     
                     row.appendChild(createCell(item.shippingType === 'air' ? (item.weightKg || 0).toFixed(2) : 'N/A', item.shippingType === 'air', item, 'weightKg', 'number', '0.01'));
                     row.appendChild(createCell(item.shippingType === 'air' ? formatCurrency(AIR_FREIGHT_KG_PRICE) : 'N/A', false, item, 'unitKgPrice'));
@@ -791,6 +805,46 @@
                 await loadDataFromLocalStorage();
             }
         }
+        
+        async function saveToGoogleSheet() {
+            if (items.length === 0) {
+                showInfoModal("There are no items to save to the sheet.");
+                return;
+            }
+            if (!SCRIPT_URL || SCRIPT_URL === "PASTE_YOUR_GOOGLE_APPS_SCRIPT_URL_HERE") {
+                showInfoModal("Google Apps Script URL is not set. Cannot save to sheet.");
+                return;
+            }
+
+            showInfoModal("Saving to Google Sheet... Please wait.");
+
+            const dataToSave = {
+                customerName: customerNameInput.value.trim(),
+                customerPhone: customerPhoneInput.value.trim(),
+                kurs: parseFloat(kursInput.value) || 2335,
+                items: items, 
+            };
+
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', 
+                    cache: 'no-cache',
+                    headers: {
+                       'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify(dataToSave),
+                    redirect: 'follow'
+                });
+                
+                showInfoModal("Data sent to Google Sheet! Please check your sheet to confirm. (Response not received due to CORS).");
+
+            } catch (error) {
+                console.error("Error sending data to Google Sheet:", error);
+                showInfoModal(`Error sending data: ${error}. Check console & GAS setup (especially deployment permissions).`);
+            }
+        }
+
 
         // Event Listeners
         addItemBtn.addEventListener('click', addItem);
@@ -809,6 +863,8 @@
         customerPhoneInput.addEventListener('change', saveDataToLocalStorage);
         saveToDbBtn.addEventListener('click', saveDataToFirestore);
         loadFromDbBtn.addEventListener('click', loadDataFromFirestore);
+        saveToSheetBtn.addEventListener('click', saveToGoogleSheet);
+
 
         const inputFieldsForEnter = [customerNameInput, customerPhoneInput, itemNameInput, itemProductLinkInput, itemQuantityInput, itemPriceYuanInput, itemLengthInput, itemWidthInput, itemHeightInput, itemWeightKgInput, itemCbmUnitPriceRpSelect];
         inputFieldsForEnter.forEach((input, idx) => {
