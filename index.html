@@ -292,8 +292,8 @@
         let db, auth, userId;
         let items = [];
         let nextId = 0;
-        let currentKurs = 2400; // Updated default Kurs
-        const AIR_FREIGHT_KG_PRICE = 170000;
+        let currentKurs = 2400; 
+        const AIR_FREIGHT_KG_PRICE = 240000; // Updated Air Freight Price
 
         // DOM Elements
         const customerNameInput = document.getElementById('customerName');
@@ -677,7 +677,7 @@
                 const dataToSave = {
                     customerName: customerNameInput.value.trim(),
                     customerPhone: customerPhoneInput.value.trim(),
-                    kurs: parseFloat(kursInput.value) || 2400, // Updated default
+                    kurs: parseFloat(kursInput.value) || 2400, 
                     items: itemsToSave, 
                 };
                 localStorage.setItem(`spreadsheetData_${appId}`, JSON.stringify(dataToSave));
@@ -695,7 +695,7 @@
                     const data = JSON.parse(localData);
                     customerNameInput.value = data.customerName || "";
                     customerPhoneInput.value = data.customerPhone || "";
-                    kursInput.value = data.kurs || 2400; // Updated default
+                    kursInput.value = data.kurs || 2400; 
                     currentKurs = parseFloat(kursInput.value);
                     items = data.items || [];
                     items.forEach((item, index) => { 
@@ -746,7 +746,7 @@
                 const dataToSave = {
                     customerName: customerNameInput.value.trim(),
                     customerPhone: customerPhoneInput.value.trim(),
-                    kurs: parseFloat(kursInput.value) || 2400, // Updated default
+                    kurs: parseFloat(kursInput.value) || 2400, 
                     items: itemsToSave,
                     lastUpdated: new Date().toISOString()
                 };
@@ -776,7 +776,7 @@
                     const data = docSnap.data();
                     customerNameInput.value = data.customerName || "";
                     customerPhoneInput.value = data.customerPhone || "";
-                    kursInput.value = data.kurs || 2400; // Updated default
+                    kursInput.value = data.kurs || 2400; 
                     currentKurs = parseFloat(kursInput.value);
                     items = data.items || [];
                     items.forEach((item, index) => {
@@ -819,7 +819,7 @@
             const dataToSave = {
                 customerName: customerNameInput.value.trim(),
                 customerPhone: customerPhoneInput.value.trim(),
-                kurs: parseFloat(kursInput.value) || 2400, // Updated default
+                kurs: parseFloat(kursInput.value) || 2400, 
                 items: items, 
             };
 
@@ -851,8 +851,8 @@
             currentKurs = parseFloat(kursInput.value) || 0;
              if (isNaN(currentKurs) || currentKurs <=0) {
                 showInfoModal("Kurs value is invalid.");
-                kursInput.value = 2400; // Updated default
-                currentKurs = 2400; // Updated default
+                kursInput.value = 2400; 
+                currentKurs = 2400; 
             }
             renderTable();
             saveDataToLocalStorage();
