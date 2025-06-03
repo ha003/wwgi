@@ -48,6 +48,7 @@
         }
         .table-cell-input {
              min-width: 60px;
+             font-size: 0.75rem; /* text-xs for inputs in table */
         }
         .table-cell-link-input {
             min-width: 150px;
@@ -78,9 +79,12 @@
             margin: 0 10px;
         }
         .calculated-field {
-            background-color: #f3f4f6;
+            background-color: #f3f4f6; /* Slightly lighter for calculated fields if not part of alternating rows */
             color: #374151;
         }
+        .profit-positive { color: #10B981; } /* Green for profit */
+        .profit-negative { color: #EF4444; } /* Red for loss */
+
         #authStatus {
             position: fixed;
             top: 10px;
@@ -110,7 +114,11 @@
         .summary-block div {
             margin-bottom: 0.5rem;
         }
-        /* Hide/show classes */
+        .summary-block .total-profit { 
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #e5e7eb; 
+        }
         .hidden-field {
             display: none !important;
         }
@@ -121,7 +129,7 @@
     <div id="authStatus"></div>
     <div id="userIdDisplay"></div>
 
-    <div class="container mx-auto bg-white shadow-xl rounded-lg p-4 md:p-6 w-full max-w-screen-xl">
+    <div class="container mx-auto bg-white shadow-xl rounded-lg p-4 md:p-6 w-full max-w-screen-2xl">
         <h1 class="text-2xl md:text-3xl font-bold text-center text-gray-700 mb-6">Advanced Price & CBM Estimator</h1>
 
         <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
@@ -140,7 +148,7 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 items-end">
             <div>
-                <label for="kursInput" class="block text-sm font-medium text-gray-700">Kurs (e.g., Yuan to Rp)</label>
+                <label for="kursInput" class="block text-sm font-medium text-gray-700">Kurs (Yuan to Rp)</label>
                 <input type="number" id="kursInput" value="2400" min="0" step="0.01" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
             </div>
              <div class="md:col-span-2 flex justify-end items-center space-x-2">
@@ -205,8 +213,8 @@
                         <input type="number" id="itemHeight" placeholder="10" min="0" step="0.01" class="mt-1 input-field">
                     </div>
                     <div>
-                        <label for="itemCbmUnitPriceRp" class="block text-sm font-medium text-gray-700">Sea - CBM Category</label>
-                        <select id="itemCbmUnitPriceRp" class="mt-1 select-field">
+                        <label for="itemSeaCustomerUnitPriceRp" class="block text-sm font-medium text-gray-700">Sea - CBM Customer Price</label>
+                        <select id="itemSeaCustomerUnitPriceRp" class="mt-1 select-field">
                             <option value="4750000">UMUM - Rp 4,750,000</option>
                             <option value="6000000">Larangan terbatas - Rp 6,000,000</option>
                             <option value="5250000">Lartas ringan - Rp 5,250,000</option>
@@ -216,7 +224,7 @@
                             <option value="4750000">BAG - Rp 4,750,000</option>
                             <option value="7250000">COSMETIC/FOOD - Rp 7,250,000</option>
                             <option value="4750000">ACC HP - Rp 4,750,000</option>
-                            <option value="0">Custom Price (edit in table)</option>
+                            <option value="0">Custom Customer Price (edit in table)</option>
                         </select>
                     </div>
                 </div>
@@ -235,40 +243,46 @@
 
 
         <div class="overflow-x-auto rounded-lg shadow">
-            <table class="min-w-full divide-y divide-gray-200">
+            <table class="min-w-full divide-y divide-gray-200 text-xs">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="min-width: 120px;">Item Name</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="min-width: 120px;">Product Link</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ship. Type</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price (Yuan)</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">L(cm)</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">W(cm)</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">H(cm)</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CBM</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit CBM Price (Rp)</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Weight (KG)</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit KG Price (Rp)</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Ship. Cost (Rp)</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Item Cost (Rp)</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Item Cost (Rp)</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Overall Row Total (Rp)</th>
-                        <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th class="px-2 py-3 text-left font-medium text-gray-500 uppercase tracking-wider" style="min-width: 100px;">Item Name</th>
+                        <th class="px-2 py-3 text-left font-medium text-gray-500 uppercase tracking-wider" style="min-width: 100px;">Product Link</th>
+                        <th class="px-2 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Ship. Type</th>
+                        <th class="px-2 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                        <th class="px-2 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Cust. Price/Pcs</th>
+                        <th class="px-2 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Price (Yuan)</th>
+                        <th class="px-2 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">L</th>
+                        <th class="px-2 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">W</th>
+                        <th class="px-2 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">H</th>
+                        <th class="px-2 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">CBM</th>
+                        <th class="px-2 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Capital CBM Price</th>
+                        <th class="px-2 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Weight(KG)</th>
+                        <th class="px-2 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Capital KG Price</th>
+                        <th class="px-2 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Customer Unit Ship. Price</th>
+                        <th class="px-2 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Total Capital Ship. Cost</th>
+                        <th class="px-2 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Total Customer Ship. Cost</th>
+                        <th class="px-2 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Total Item Cost (Capital)</th>
+                        <th class="px-2 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Total Capital Cost</th>
+                        <th class="px-2 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Total Customer Price</th>
+                        <th class="px-2 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Profit per Item</th>
+                        <th class="px-2 py-3 text-center font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="spreadsheetBody" class="bg-white divide-y divide-gray-200">
                     <tr id="emptyRow">
-                        <td colspan="17" class="px-4 py-10 text-center text-gray-500">No items added yet. Add items or load data.</td>
+                        <td colspan="21" class="px-4 py-10 text-center text-gray-500">No items added yet. Add items or load data.</td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
         <div class="mt-6 flex flex-col md:flex-row justify-between items-center">
-            <div class="text-xl font-semibold text-gray-700 mb-4 md:mb-0 summary-block">
-                <div>Grand Total: <span id="grandTotal" class="text-blue-600">Rp 0.00</span></div>
-                <div class="text-lg text-gray-600">Avg. Price / Piece: <span id="averagePrice" class="text-green-600">Rp 0.00</span></div>
+            <div class="text-gray-700 mb-4 md:mb-0 summary-block">
+                <div class="text-xl font-semibold">Grand Total (Customer Price): <span id="grandTotalCustomerPrice" class="text-blue-600">Rp 0.00</span></div>
+                <hr class="my-2">
+                <div class="text-lg font-medium">Total Capital Expenditure: <span id="totalCapitalCost" class="text-red-600">Rp 0.00</span></div>
+                <div class="text-xl font-bold total-profit">Total Profit: <span id="totalProfit" class="text-green-600">Rp 0.00</span></div>
             </div>
             <button id="clearAllBtn" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md shadow">
                 Clear All Items
@@ -293,7 +307,10 @@
         let items = [];
         let nextId = 0;
         let currentKurs = 2400; 
-        const AIR_FREIGHT_KG_PRICE = 240000; // Updated Air Freight Price
+        
+        const SEA_FREIGHT_MARKUP = 750000;
+        const AIR_FREIGHT_CUSTOMER_KG_PRICE = 240000;
+        const AIR_FREIGHT_CAPITAL_KG_PRICE = 170000;
 
         // DOM Elements
         const customerNameInput = document.getElementById('customerName');
@@ -312,13 +329,15 @@
         const itemLengthInput = document.getElementById('itemLength');
         const itemWidthInput = document.getElementById('itemWidth');
         const itemHeightInput = document.getElementById('itemHeight');
-        const itemCbmUnitPriceRpSelect = document.getElementById('itemCbmUnitPriceRp');
+        const itemSeaCustomerUnitPriceRpSelect = document.getElementById('itemSeaCustomerUnitPriceRp');
         const itemWeightKgInput = document.getElementById('itemWeightKg');
 
         const addItemBtn = document.getElementById('addItemBtn');
         const spreadsheetBody = document.getElementById('spreadsheetBody');
-        const grandTotalDisplay = document.getElementById('grandTotal');
-        const averagePriceDisplay = document.getElementById('averagePrice');
+        const grandTotalCustomerPriceDisplay = document.getElementById('grandTotalCustomerPrice');
+        const totalCapitalCostDisplay = document.getElementById('totalCapitalCost');
+        const totalProfitDisplay = document.getElementById('totalProfit');
+        
         const clearAllBtn = document.getElementById('clearAllBtn');
         const emptyRow = document.getElementById('emptyRow');
 
@@ -336,15 +355,13 @@
         const infoMessage = document.getElementById('infoMessage');
         const okInfoBtn = document.getElementById('okInfoBtn');
 
-        // Google Apps Script URL (Must be replaced by the user)
         const SCRIPT_URL = "PASTE_YOUR_GOOGLE_APPS_SCRIPT_URL_HERE"; 
 
-        // --- Shipping Type Toggle ---
         function toggleShippingFields() {
             if (shippingTypeSeaRadio.checked) {
                 seaFreightFieldsContainer.classList.remove('hidden-field');
                 airFreightFieldsContainer.classList.add('hidden-field');
-            } else { // Air checked
+            } else { 
                 seaFreightFieldsContainer.classList.add('hidden-field');
                 airFreightFieldsContainer.classList.remove('hidden-field');
             }
@@ -371,15 +388,13 @@
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         userId = user.uid;
-                        console.log("Authenticated User ID:", userId);
                         authStatusDiv.textContent = "DB Connected";
                         authStatusDiv.style.backgroundColor = "#10B981";
                         authStatusDiv.style.display = "block";
-                        userIdDisplayDiv.textContent = `User: ${userId}`;
+                        userIdDisplayDiv.textContent = `User: ${userId.substring(0,8)}...`;
                         userIdDisplayDiv.style.display = "block";
                         await loadDataFromFirestore();
                     } else {
-                        console.log("User is signed out or auth token invalid.");
                         authStatusDiv.textContent = "DB Disconnected";
                         authStatusDiv.style.backgroundColor = "orange";
                         authStatusDiv.style.display = "block";
@@ -417,24 +432,30 @@
         }
         okInfoBtn.onclick = () => infoModal.style.display = 'none';
 
-        function createCell(content, isEditable = false, item = null, field = '', type = 'text', step = 'any') {
+        function createCell(content, isEditable = false, item = null, field = '', type = 'text', step = 'any', additionalClass = '') {
             const cell = document.createElement('td');
-            cell.classList.add('px-2', 'py-2', 'whitespace-nowrap', 'text-sm', 'text-gray-800'); 
+            cell.classList.add('px-2', 'py-2', 'whitespace-nowrap', 'text-xs', 'text-gray-800'); // Adjusted padding
+            if (additionalClass) cell.classList.add(...additionalClass.split(' '));
             
             let actualEditable = isEditable;
-            if (field === 'shippingType' || 
-                (item?.shippingType === 'air' && ['length', 'width', 'height', 'cbm', 'cbmUnitPriceRp'].includes(field)) ||
-                (item?.shippingType === 'sea' && ['weightKg', 'unitKgPrice'].includes(field)) ||
-                field === 'unitKgPrice' 
-            ) {
-                actualEditable = false;
-            }
+            const nonEditableFields = ['shippingType', 'cbm', 'capitalUnitKgPrice', 'customerUnitShipPrice', 
+                                     'totalCapitalShippingCostRp', 'totalCustomerShippingCostRp', 
+                                     'totalCapitalItemCostRp', 'overallCapitalCostRp', 
+                                     'overallCustomerPriceRp', 'profitPerItemRp', 'customerPricePerPieceRp',
+                                     'seaCapitalUnitPriceRp']; // seaCapitalUnitPriceRp is always calculated
+            if (nonEditableFields.includes(field)) actualEditable = false;
+
+            if (item?.shippingType === 'air' && ['length', 'width', 'height', 'seaCapitalUnitPriceRp', 'seaCustomerUnitPriceRp'].includes(field)) actualEditable = false;
+            if (item?.shippingType === 'sea' && ['weightKg'].includes(field)) actualEditable = false;
+            // Allow editing customer CBM price if it was set to 0 (custom)
+            if (field === 'seaCustomerUnitPriceRp' && item?.shippingType === 'sea' && item?.seaCustomerUnitPriceRp === 0 && isEditable) actualEditable = true;
 
 
             if (actualEditable && item) {
                 const input = document.createElement('input');
                 input.type = type;
-                input.value = (field === 'cbmUnitPriceRp' && typeof content === 'number') ? content.toFixed(0) : content;
+                input.value = content; // Direct value for editable fields
+
                  if (field === 'productLink') {
                     input.type = 'url';
                     input.classList.add('table-cell-link-input');
@@ -443,14 +464,14 @@
                     input.min = "0";
                     input.step = step;
                 }
-                input.classList.add('table-cell-input');
+                input.classList.add('table-cell-input', 'text-xs');
                 input.onchange = (e) => updateItem(item.id, field, type === 'number' ? parseFloat(e.target.value) : e.target.value);
                 cell.appendChild(input);
             } else {
                  if (field === 'productLink' && content) {
                     const link = document.createElement('a');
                     link.href = content;
-                    link.textContent = content.length > 20 ? content.substring(0, 17) + '...' : content; 
+                    link.textContent = content.length > 15 ? content.substring(0, 12) + '...' : content; 
                     link.title = content; 
                     link.target = "_blank"; 
                     link.classList.add('text-blue-600', 'hover:text-blue-800', 'hover:underline');
@@ -458,10 +479,10 @@
                 } else {
                     cell.textContent = content;
                 }
-                if (typeof content === 'number' && !isEditable && field !== 'productLink') {
+                if (typeof content === 'number' && !actualEditable && field !== 'productLink') {
                      cell.classList.add('calculated-field');
                 }
-                if (!actualEditable && (content === 'N/A' || content === '' || content === 0 || content === 'Rp 0.00' ) && !['shippingType', 'productLink'].includes(field)) { 
+                if (!actualEditable && (content === 'N/A' || content === '' || (typeof content === 'number' && content === 0) || content === 'Rp 0.00' ) && !['shippingType', 'productLink'].includes(field)) { 
                     cell.textContent = 'N/A';
                     cell.classList.add('text-gray-400');
                 }
@@ -473,24 +494,42 @@
         }
 
         function calculateItemDerivedValues(item) {
-            item.unitItemCostRp = (parseFloat(item.priceYuan) || 0) * currentKurs;
-            item.totalItemCostRp = item.unitItemCostRp * (parseFloat(item.quantity) || 0);
-            item.totalShippingCostRp = 0;
+            item.priceYuan = parseFloat(item.priceYuan) || 0;
+            item.quantity = parseFloat(item.quantity) || 0;
+            item.length = parseFloat(item.length) || 0;
+            item.width = parseFloat(item.width) || 0;
+            item.height = parseFloat(item.height) || 0;
+            item.seaCustomerUnitPriceRp = parseFloat(item.seaCustomerUnitPriceRp) || 0; 
+            item.weightKg = parseFloat(item.weightKg) || 0;
+
+            item.totalCapitalItemCostRp = item.priceYuan * currentKurs * item.quantity;
 
             if (item.shippingType === 'sea') {
-                item.cbm = ((parseFloat(item.length) || 0) * (parseFloat(item.width) || 0) * (parseFloat(item.height) || 0)) / 1000000;
-                item.totalShippingCostRp = item.cbm * (parseFloat(item.cbmUnitPriceRp) || 0);
-                item.weightKg = 0; 
+                item.cbm = (item.length * item.width * item.height) / 1000000;
+                item.seaCapitalUnitPriceRp = item.seaCustomerUnitPriceRp > 0 ? item.seaCustomerUnitPriceRp - SEA_FREIGHT_MARKUP : 0;
+                
+                item.totalCapitalShippingCostRp = item.cbm * item.seaCapitalUnitPriceRp;
+                item.totalCustomerShippingCostRp = item.cbm * item.seaCustomerUnitPriceRp;
+                item.customerUnitShipPrice = item.seaCustomerUnitPriceRp; 
             } else if (item.shippingType === 'air') {
-                item.totalShippingCostRp = (parseFloat(item.weightKg) || 0) * AIR_FREIGHT_KG_PRICE;
-                item.length = 0;
-                item.width = 0;
-                item.height = 0;
-                item.cbm = 0;
-                item.cbmUnitPriceRp = 0;
+                item.totalCapitalShippingCostRp = item.weightKg * AIR_FREIGHT_CAPITAL_KG_PRICE;
+                item.totalCustomerShippingCostRp = item.weightKg * AIR_FREIGHT_CUSTOMER_KG_PRICE;
+                item.cbm = 0; 
+                item.seaCapitalUnitPriceRp = 0; 
+                item.customerUnitShipPrice = AIR_FREIGHT_CUSTOMER_KG_PRICE; 
+            } else { 
+                item.totalCapitalShippingCostRp = 0;
+                item.totalCustomerShippingCostRp = 0;
+                item.customerUnitShipPrice = 0;
+                item.seaCapitalUnitPriceRp = 0;
             }
-            item.overallTotalRowRp = item.totalItemCostRp + item.totalShippingCostRp;
+
+            item.overallCapitalCostRp = item.totalCapitalItemCostRp + item.totalCapitalShippingCostRp;
+            item.overallCustomerPriceRp = item.totalCapitalItemCostRp + item.totalCustomerShippingCostRp;
+            item.profitPerItemRp = item.overallCustomerPriceRp - item.overallCapitalCostRp;
+            item.customerPricePerPieceRp = item.quantity > 0 ? item.overallCustomerPriceRp / item.quantity : 0;
         }
+
 
         function renderTable() {
             spreadsheetBody.innerHTML = '';
@@ -501,35 +540,47 @@
                 if(emptyRow) emptyRow.style.display = 'table-row';
             } else {
                 if(emptyRow) emptyRow.style.display = 'none';
-                items.forEach(item => {
+                items.forEach((item, index) => { // Added index for alternating rows
                     calculateItemDerivedValues(item);
 
                     const row = document.createElement('tr');
                     row.setAttribute('data-id', item.id);
-                    row.classList.add('hover:bg-gray-50');
+                    // Alternating row colors
+                    if (index % 2 !== 0) { // 0-indexed, so odd index is 2nd, 4th row etc.
+                        row.classList.add('bg-gray-50');
+                    }
+                    row.classList.add('hover:bg-gray-100');
+
 
                     row.appendChild(createCell(item.name, true, item, 'name'));
                     row.appendChild(createCell(item.productLink || '', true, item, 'productLink', 'url'));
                     row.appendChild(createCell(item.shippingType === 'sea' ? 'Sea' : 'Air', false, item, 'shippingType'));
                     row.appendChild(createCell(item.quantity, true, item, 'quantity', 'number'));
+                    row.appendChild(createCell(formatCurrency(item.customerPricePerPieceRp), false, item, 'customerPricePerPieceRp'));
                     row.appendChild(createCell(item.priceYuan.toFixed(2), true, item, 'priceYuan', 'number', '0.01'));
 
-                    row.appendChild(createCell(item.shippingType === 'sea' ? (item.length || 0).toFixed(2) : 'N/A', item.shippingType === 'sea', item, 'length', 'number', '0.01'));
-                    row.appendChild(createCell(item.shippingType === 'sea' ? (item.width || 0).toFixed(2) : 'N/A', item.shippingType === 'sea', item, 'width', 'number', '0.01'));
-                    row.appendChild(createCell(item.shippingType === 'sea' ? (item.height || 0).toFixed(2) : 'N/A', item.shippingType === 'sea', item, 'height', 'number', '0.01'));
-                    row.appendChild(createCell(item.shippingType === 'sea' ? (item.cbm || 0).toFixed(4) : 'N/A', false, item, 'cbm'));
-                    row.appendChild(createCell(item.shippingType === 'sea' ? formatCurrency(item.cbmUnitPriceRp || 0) : 'N/A', item.shippingType === 'sea', item, 'cbmUnitPriceRp', 'number', '1'));
+                    // Sea Freight
+                    row.appendChild(createCell(item.shippingType === 'sea' ? item.length.toFixed(2) : 'N/A', item.shippingType === 'sea', item, 'length', 'number', '0.01'));
+                    row.appendChild(createCell(item.shippingType === 'sea' ? item.width.toFixed(2) : 'N/A', item.shippingType === 'sea', item, 'width', 'number', '0.01'));
+                    row.appendChild(createCell(item.shippingType === 'sea' ? item.height.toFixed(2) : 'N/A', item.shippingType === 'sea', item, 'height', 'number', '0.01'));
+                    row.appendChild(createCell(item.shippingType === 'sea' ? item.cbm.toFixed(4) : 'N/A', false, item, 'cbm'));
+                    row.appendChild(createCell(item.shippingType === 'sea' ? formatCurrency(item.seaCapitalUnitPriceRp) : 'N/A', false, item, 'seaCapitalUnitPriceRp')); 
                     
-                    row.appendChild(createCell(item.shippingType === 'air' ? (item.weightKg || 0).toFixed(2) : 'N/A', item.shippingType === 'air', item, 'weightKg', 'number', '0.01'));
-                    row.appendChild(createCell(item.shippingType === 'air' ? formatCurrency(AIR_FREIGHT_KG_PRICE) : 'N/A', false, item, 'unitKgPrice'));
+                    // Air Freight
+                    row.appendChild(createCell(item.shippingType === 'air' ? item.weightKg.toFixed(2) : 'N/A', item.shippingType === 'air', item, 'weightKg', 'number', '0.01'));
+                    row.appendChild(createCell(item.shippingType === 'air' ? formatCurrency(AIR_FREIGHT_CAPITAL_KG_PRICE) : 'N/A', false, item, 'capitalUnitKgPrice'));
+                    row.appendChild(createCell(formatCurrency(item.customerUnitShipPrice), false, item, 'customerUnitShipPrice')); 
                     
-                    row.appendChild(createCell(formatCurrency(item.totalShippingCostRp || 0), false, item, 'totalShippingCostRp'));
-                    row.appendChild(createCell(formatCurrency(item.unitItemCostRp || 0), false, item, 'unitItemCostRp'));
-                    row.appendChild(createCell(formatCurrency(item.totalItemCostRp || 0), false, item, 'totalItemCostRp'));
-                    row.appendChild(createCell(formatCurrency(item.overallTotalRowRp || 0), false, item, 'overallTotalRowRp'));
+                    // Costs
+                    row.appendChild(createCell(formatCurrency(item.totalCapitalShippingCostRp), false, item, 'totalCapitalShippingCostRp'));
+                    row.appendChild(createCell(formatCurrency(item.totalCustomerShippingCostRp), false, item, 'totalCustomerShippingCostRp'));
+                    row.appendChild(createCell(formatCurrency(item.totalCapitalItemCostRp), false, item, 'totalCapitalItemCostRp'));
+                    row.appendChild(createCell(formatCurrency(item.overallCapitalCostRp), false, item, 'overallCapitalCostRp'));
+                    row.appendChild(createCell(formatCurrency(item.overallCustomerPriceRp), false, item, 'overallCustomerPriceRp'));
+                    row.appendChild(createCell(formatCurrency(item.profitPerItemRp), false, item, 'profitPerItemRp', '', '', item.profitPerItemRp >= 0 ? 'profit-positive' : 'profit-negative'));
 
                     const actionsCell = document.createElement('td');
-                    actionsCell.classList.add('px-2', 'py-2', 'text-center', 'whitespace-nowrap', 'text-sm');
+                    actionsCell.classList.add('px-2', 'py-2', 'text-center', 'whitespace-nowrap', 'text-sm'); // Adjusted padding
                     const removeBtn = document.createElement('button');
                     removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500 hover:text-red-700" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>`;
                     removeBtn.classList.add('p-1', 'rounded-full');
@@ -545,12 +596,14 @@
         }
 
         function updateSummaryTotals() {
-            const grandTotal = items.reduce((sum, item) => sum + (item.overallTotalRowRp || 0), 0);
-            const totalQuantity = items.reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
-            const averagePrice = totalQuantity > 0 ? (grandTotal / totalQuantity) : 0;
+            const totalCustomerPrice = items.reduce((sum, item) => sum + (item.overallCustomerPriceRp || 0), 0);
+            const totalCapital = items.reduce((sum, item) => sum + (item.overallCapitalCostRp || 0), 0);
+            const totalProfit = items.reduce((sum, item) => sum + (item.profitPerItemRp || 0), 0);
 
-            grandTotalDisplay.textContent = formatCurrency(grandTotal);
-            averagePriceDisplay.textContent = formatCurrency(averagePrice);
+            grandTotalCustomerPriceDisplay.textContent = formatCurrency(totalCustomerPrice);
+            totalCapitalCostDisplay.textContent = formatCurrency(totalCapital);
+            totalProfitDisplay.textContent = formatCurrency(totalProfit);
+            totalProfitDisplay.className = totalProfit >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold';
         }
 
         function addItem() {
@@ -569,23 +622,31 @@
             let newItemData = { 
                 id: db ? doc(collection(db, "dummy")).id : `local-${nextId++}`,
                 name, productLink, quantity, priceYuan, shippingType,
-                length: 0, width: 0, height: 0, cbm: 0, cbmUnitPriceRp: 0,
+                length: 0, width: 0, height: 0, cbm: 0, 
+                seaCustomerUnitPriceRp: 0, 
+                seaCapitalUnitPriceRp: 0,  
                 weightKg: 0,
-                totalShippingCostRp:0, unitItemCostRp:0, totalItemCostRp:0, overallTotalRowRp:0
             };
 
             if (shippingType === 'sea') {
                 const length = parseFloat(itemLengthInput.value);
                 const width = parseFloat(itemWidthInput.value);
                 const height = parseFloat(itemHeightInput.value);
-                const cbmUnitPriceRp = parseFloat(itemCbmUnitPriceRpSelect.value);
+                const seaCustomerUnitPriceRp = parseFloat(itemSeaCustomerUnitPriceRpSelect.value); 
 
                 if (isNaN(length) || length <= 0) { showInfoModal('Valid length for Sea Freight required.'); itemLengthInput.focus(); return; }
                 if (isNaN(width) || width <= 0) { showInfoModal('Valid width for Sea Freight required.'); itemWidthInput.focus(); return; }
                 if (isNaN(height) || height <= 0) { showInfoModal('Valid height for Sea Freight required.'); itemHeightInput.focus(); return; }
-                if (isNaN(cbmUnitPriceRp) || cbmUnitPriceRp < 0) { showInfoModal('Valid CBM unit price selection for Sea Freight required.'); itemCbmUnitPriceRpSelect.focus(); return; }
+                if (isNaN(seaCustomerUnitPriceRp) || seaCustomerUnitPriceRp < 0) { showInfoModal('Valid CBM Customer Price selection for Sea Freight required.'); itemSeaCustomerUnitPriceRpSelect.focus(); return; }
                 
-                newItemData = {...newItemData, length, width, height, cbmUnitPriceRp};
+                newItemData = {
+                    ...newItemData, 
+                    length, 
+                    width, 
+                    height, 
+                    seaCustomerUnitPriceRp, // Store the selected customer price
+                    // seaCapitalUnitPriceRp will be derived in calculateItemDerivedValues
+                };
             } else { 
                 const weightKg = parseFloat(itemWeightKgInput.value);
                 if (isNaN(weightKg) || weightKg <= 0) { showInfoModal('Valid weight (must be > 0) for Air Freight required.'); itemWeightKgInput.focus(); return; }
@@ -598,7 +659,7 @@
 
             [itemNameInput, itemProductLinkInput, itemQuantityInput, itemPriceYuanInput].forEach(input => input.value = '');
             itemLengthInput.value = ''; itemWidthInput.value = ''; itemHeightInput.value = '';
-            itemCbmUnitPriceRpSelect.selectedIndex = 0;
+            itemSeaCustomerUnitPriceRpSelect.selectedIndex = 0;
             itemWeightKgInput.value = '';
             itemNameInput.focus();
         }
@@ -612,17 +673,21 @@
                 if (field === 'quantity' && (isNaN(value) || parseFloat(value) <= 0)) { 
                      showInfoModal(`Invalid quantity. Must be greater than 0.`); renderTable(); return;
                 }
-                if (['priceYuan', 'length', 'width', 'height', 'cbmUnitPriceRp', 'weightKg'].includes(field)) {
-                    if (isNaN(value) || parseFloat(value) < 0) {
+
+                if (['priceYuan', 'length', 'width', 'height', 'seaCustomerUnitPriceRp', 'weightKg'].includes(field)) {
+                    const parsedValue = parseFloat(value);
+                    if (isNaN(parsedValue) || parsedValue < 0) {
                          showInfoModal(`Invalid ${field}. Please enter a non-negative number.`); renderTable(); return;
                     }
-                    if (items[itemIndex].shippingType === 'sea' && ['length', 'width', 'height'].includes(field) && parseFloat(value) <= 0) {
+                    if (items[itemIndex].shippingType === 'sea' && ['length', 'width', 'height'].includes(field) && parsedValue <= 0) {
                         showInfoModal(`Sea freight ${field} must be greater than 0.`); renderTable(); return;
                     }
-                    if (items[itemIndex].shippingType === 'air' && field === 'weightKg' && parseFloat(value) <= 0) {
+                    if (items[itemIndex].shippingType === 'air' && field === 'weightKg' && parsedValue <= 0) {
                         showInfoModal(`Air freight weight must be greater than 0.`); renderTable(); return;
                     }
-                    items[itemIndex][field] = parseFloat(value);
+                    items[itemIndex][field] = parsedValue;
+                    // No need to re-derive seaCapitalUnitPriceRp here, calculateItemDerivedValues handles it before render
+
                 } else {
                      items[itemIndex][field] = value; 
                 }
@@ -665,12 +730,16 @@
         function saveDataToLocalStorage() {
             try {
                 const itemsToSave = items.map(item => ({
-                    ...item, 
+                    id: item.id,
+                    name: item.name,
+                    productLink: item.productLink || "",
+                    quantity: parseFloat(item.quantity) || 0,
+                    priceYuan: parseFloat(item.priceYuan) || 0,
                     shippingType: item.shippingType || 'sea', 
                     length: parseFloat(item.length) || 0,
                     width: parseFloat(item.width) || 0,
                     height: parseFloat(item.height) || 0,
-                    cbmUnitPriceRp: parseFloat(item.cbmUnitPriceRp) || 0,
+                    seaCustomerUnitPriceRp: parseFloat(item.seaCustomerUnitPriceRp) || 0, 
                     weightKg: parseFloat(item.weightKg) || 0,
                 }));
 
@@ -707,7 +776,8 @@
                         item.length = parseFloat(item.length) || 0;
                         item.width = parseFloat(item.width) || 0;
                         item.height = parseFloat(item.height) || 0;
-                        item.cbmUnitPriceRp = parseFloat(item.cbmUnitPriceRp) || 0;
+                        item.seaCustomerUnitPriceRp = parseFloat(item.seaCustomerUnitPriceRp) || 0; 
+                        // seaCapitalUnitPriceRp will be derived in calculateItemDerivedValues
                         item.weightKg = parseFloat(item.weightKg) || 0; 
                     });
                     renderTable();
@@ -731,7 +801,8 @@
             }
             try {
                 const itemsToSave = items.map(item => ({
-                    ...item,
+                    id: item.id,
+                    name: item.name,
                     shippingType: item.shippingType || 'sea',
                     productLink: item.productLink || "",
                     quantity: parseFloat(item.quantity) || 0,
@@ -739,7 +810,7 @@
                     length: parseFloat(item.length) || 0,
                     width: parseFloat(item.width) || 0,
                     height: parseFloat(item.height) || 0,
-                    cbmUnitPriceRp: parseFloat(item.cbmUnitPriceRp) || 0,
+                    seaCustomerUnitPriceRp: parseFloat(item.seaCustomerUnitPriceRp) || 0, 
                     weightKg: parseFloat(item.weightKg) || 0,
                 }));
 
@@ -788,7 +859,8 @@
                         item.length = parseFloat(item.length) || 0;
                         item.width = parseFloat(item.width) || 0;
                         item.height = parseFloat(item.height) || 0;
-                        item.cbmUnitPriceRp = parseFloat(item.cbmUnitPriceRp) || 0;
+                        item.seaCustomerUnitPriceRp = parseFloat(item.seaCustomerUnitPriceRp) || 0;
+                        // seaCapitalUnitPriceRp will be derived in calculateItemDerivedValues
                         item.weightKg = parseFloat(item.weightKg) || 0;
                     });
                     renderTable();
@@ -813,14 +885,23 @@
                 showInfoModal("Google Apps Script URL is not set. Cannot save to sheet.");
                 return;
             }
-
             showInfoModal("Saving to Google Sheet... Please wait.");
-
             const dataToSave = {
                 customerName: customerNameInput.value.trim(),
                 customerPhone: customerPhoneInput.value.trim(),
-                kurs: parseFloat(kursInput.value) || 2400, 
-                items: items, 
+                kurs: parseFloat(kursInput.value) || 2400,
+                items: items.map(item => ({ 
+                    ...item, 
+                    totalCapitalShippingCostRp: item.totalCapitalShippingCostRp,
+                    totalCustomerShippingCostRp: item.totalCustomerShippingCostRp,
+                    totalCapitalItemCostRp: item.totalCapitalItemCostRp,
+                    overallCapitalCostRp: item.overallCapitalCostRp,
+                    overallCustomerPriceRp: item.overallCustomerPriceRp,
+                    profitPerItemRp: item.profitPerItemRp,
+                    customerUnitShipPrice: item.customerUnitShipPrice,
+                    customerPricePerPieceRp: item.customerPricePerPieceRp, 
+                    unitItemCostRp: item.priceYuan * currentKurs 
+                }))
             };
 
             try {
@@ -828,21 +909,16 @@
                     method: 'POST',
                     mode: 'no-cors', 
                     cache: 'no-cache',
-                    headers: {
-                       'Content-Type': 'application/json' 
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(dataToSave),
                     redirect: 'follow'
                 });
-                
                 showInfoModal("Data sent to Google Sheet! Please check your sheet to confirm. (Response not received due to CORS).");
-
             } catch (error) {
                 console.error("Error sending data to Google Sheet:", error);
                 showInfoModal(`Error sending data: ${error}. Check console & GAS setup (especially deployment permissions).`);
             }
         }
-
 
         // Event Listeners
         addItemBtn.addEventListener('click', addItem);
@@ -863,8 +939,7 @@
         loadFromDbBtn.addEventListener('click', loadDataFromFirestore);
         saveToSheetBtn.addEventListener('click', saveToGoogleSheet);
 
-
-        const inputFieldsForEnter = [customerNameInput, customerPhoneInput, itemNameInput, itemProductLinkInput, itemQuantityInput, itemPriceYuanInput, itemLengthInput, itemWidthInput, itemHeightInput, itemWeightKgInput, itemCbmUnitPriceRpSelect];
+        const inputFieldsForEnter = [customerNameInput, customerPhoneInput, itemNameInput, itemProductLinkInput, itemQuantityInput, itemPriceYuanInput, itemLengthInput, itemWidthInput, itemHeightInput, itemWeightKgInput, itemSeaCustomerUnitPriceRpSelect];
         inputFieldsForEnter.forEach((input, idx) => {
             if (!input) { 
                 console.warn("An input field for Enter key handling was not found. Check IDs.");
@@ -876,14 +951,13 @@
                     const currentShippingType = shippingTypeSeaRadio.checked ? 'sea' : 'air';
                     let isLastRelevantInput = false;
 
-                    if (currentShippingType === 'sea' && (input === itemHeightInput || input === itemCbmUnitPriceRpSelect)) {
+                    if (currentShippingType === 'sea' && (input === itemHeightInput || input === itemSeaCustomerUnitPriceRpSelect)) {
                         isLastRelevantInput = true;
                     } else if (currentShippingType === 'air' && input === itemWeightKgInput) {
                         isLastRelevantInput = true;
                     } else if (input === itemPriceYuanInput && (currentShippingType === 'sea' && !itemLengthInput) ) { 
                         isLastRelevantInput = true;
                     }
-
 
                     if (isLastRelevantInput) {
                         addItem();
